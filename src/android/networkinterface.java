@@ -38,6 +38,7 @@ public class networkinterface extends CordovaPlugin {
 	public static final String GET__WIFI_IP_ADDRESS="getWiFiIPAddress";
 	public static final String GET_CARRIER_IP_ADDRESS="getCarrierIPAddress";
 	public static final String GET_HTTP_PROXY_INFORMATION="getHttpProxyInformation";
+	public static final String GET_VPN_INFORMATION="getVpnInformation";
 	private static final String TAG = "cordova-plugin-networkinterface";
 
 
@@ -77,7 +78,19 @@ public class networkinterface extends CordovaPlugin {
 				}
 			});
 			return true;
-		}else{
+		} else if(GET_VPN_INFORMATION.equals(action)) {
+			cordova.getActivity().runOnUiThread(new Runnable() {
+				public void run() {
+					try{
+						getVpnInformation(callbackContext);
+					}catch(Exception e){
+						callbackError(action, callbackContext, e);
+					}
+				}
+			});
+			return true;
+		}
+		else{
 			cordova.getActivity().runOnUiThread(new Runnable() {
 				public void run() {
 					callbackContext.error("Error no such method '" + action + "'");
@@ -204,6 +217,27 @@ public class networkinterface extends CordovaPlugin {
 	  }
 	  return new String[]{ null, null };
 	}
+
+	private void getVpnInformation(CallbackContext callbackContext) {
+		boolean enabled = isVpnEnable();
+		callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, enabled));
+	}
+
+	public static boolean isVpnEnable() {
+        try {
+            Enumeration<NetworkInterface> list =  NetworkInterface.getNetworkInterfaces();
+            while (list.hasMoreElements()) {
+                NetworkInterface networkInterface = list.nextElement();
+                if (networkInterface.isUp()) {
+                    String interfaceName = networkInterface.getName();
+                    if (interfaceName.contains("tun") || interfaceName.contains("ppp") || interfaceName.contains("pptp")) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {}
+        return false;
+    }
 
 	public static String getIPv4Subnet(InetAddress inetAddress) {
 		try {
